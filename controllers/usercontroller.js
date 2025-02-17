@@ -49,7 +49,7 @@ const login = async(req,res)=> {
                 id: user.id,
                },
         },process.env.ACCESS_SECRET,
-    {expiresIn:"5m" })
+    {expiresIn:"15m" })
           return  res.status(200).json({accessToken});
     }else{
       return  res.status(401).json({message:"Email or password is not valid"});

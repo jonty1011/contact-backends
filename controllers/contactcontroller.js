@@ -1,88 +1,101 @@
 const ContactModel = require("../models/contactmodel");
 
-const getContact = async(req,res)=>{
-   try{
-    const contact = await ContactModel.find();
-    res.status(200).send(contact);
-   }catch(e){
-    res.status(404).send({message:e.message});
-   }
+// Get all contacts for the logged-in user
+const getContact = async (req, res) => {
+    try {
+        const contacts = await ContactModel.find({ user_id:req.user.id});
+        res.status(200).json(contacts);
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
 };
 
-const createContact = async(req,res)=>{
-    try {console.log("The request body is :",req.body);
-        const {name, email , phone} = req.body;
-      
-        if(!name || !email || !phone){
-          res.status(400).json("All fields are require")
+// Create a new contact
+const createContact = async (req, res) => {
+    try {
+        const { name, email, phone } = req.body;
+        if (!name || !email || !phone) {
+            return res.status(400).json({ message: "All fields are required" });
         }
 
         const contact = await ContactModel.create({
             name,
             email,
-            phone
+            phone,
+            user_id: req.user.id, // Use the logged-in user's ID
         });
-        
-          res.status(200).json(contact);
-      }catch(e){
-        res.status(404).send({message:e.message});
-    }
-      }
 
-const getContacts = async(req,res)=>{
-    try{
-        const contact =await ContactModel.findById(req.params.id);
-        if(!contact){
-            return res.status(404).json("Contact not found");
-        }
-        res.status(200).send(contact);
-    }catch(e){
-        res.status(404).send({message:e.message});
-       }
+        res.status(201).json(contact);  // Created successfully
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
 };
 
-const upateContact = async(req,res)=>{
-    try{
+// Get a single contact by ID
+const getContacts = async (req, res) => {
+    try {
         const contact = await ContactModel.findById(req.params.id);
-        if(!contact){
-            return res.status(404).json("Contact not found");
+        if (!contact) {
+            return res.status(404).json({ message: "Contact not found" });
         }
-       contact.name = req.body.name || contact.name;
+        res.status(200).json(contact);
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
+};
+
+// Update a contact
+const updateContact = async (req, res) => {
+    try {
+        const contact = await ContactModel.findById(req.params.id);
+        if (!contact) {
+            return res.status(404).json({ message: "Contact not found" });
+        }
+        if(contact.user_id.toString()!== req.User.id ){
+         return res.status(403).json({ message: "User don't have permission to update other contact" });
+        }
+
+        contact.name = req.body.name || contact.name;
         contact.email = req.body.email || contact.email;
         contact.phone = req.body.phone || contact.phone;
+
+        /* const updatedContact = await ContactModel.findByIdAndUpdate{
+        req.params.id,
+        req.body,
+        {new:true}} */
         await contact.save();
-        
-        //another logic
-        /*const updateContact = await ContactModel.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            {new: true}
-        )*/
-        /*await updateContact.save();
-        res.status(200).send(updateContact);*/
-        res.status(200).send(contact);
-    }catch(e){
-        res.status(404).send({message:e.message});
-       }
-    
+
+        // to update contact 
+
+        res.status(200).json(contact);
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
 };
 
-const deleteContact = async(req,res)=>{
-    try{
+// Delete a contact
+const deleteContact = async (req, res) => {
+    try {
         const contact = await ContactModel.findById(req.params.id);
-        if(!contact){
-            res.status(404).json("Contact not found");
+        if (!contact) {
+            return res.status(404).json({ message: "Contact not found" });
         }
+
+        if(contact.user_id.toString()!== req.User.id ){
+            return res.status(403).json({ message: "User don't have permission to delete other contact" });
+           }
+
         await ContactModel.deleteOne({ _id: req.params.id });
-        res.status(200).send({message:`Contact is deleted`});
-    }catch(e){
-        res.status(404).send({message:e.message});
-       }
+        res.status(200).json({ message: "Contact deleted" });
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
 };
 
 module.exports = {
-getContact,
-createContact,
-getContacts,
-upateContact,
- deleteContact};
+    getContact,
+    createContact,
+    getContacts,
+    updateContact,
+    deleteContact,
+};

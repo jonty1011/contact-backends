@@ -10,7 +10,7 @@ const port =process.env.PORT || 5001
 
 // In express we need a body parser to parse incoming body request so we use this middleware
 app.use(express.json());
-app.use(errorHandler);
+
 
 app.use("/api/contacts", Contactroutes);
 app.use("/api/users", Usersroutes);
